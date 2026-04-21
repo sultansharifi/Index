@@ -63,7 +63,27 @@ function todayStr(){return new Date().toISOString().slice(0,10);}
 function formatFullDate() {
     const now = new Date();
     const gregorian = now.toLocaleDateString('en-GB', { year:'numeric', month:'long', day:'numeric' });
-    const persian = now.toLocaleDateString('fa-IR', { year:'numeric', month:'long', day:'numeric' });
+    // تابع تبدیل تاریخ میلادی به شمسی با نام ماه‌های افغانی (دری)
+function toAfghanPersianDate(date) {
+    const persianNumbers = date.toLocaleDateString('fa-IR-u-nu-latn', { year:'numeric', month:'numeric', day:'numeric' }).split('/');
+    const year = persianNumbers[0];
+    const monthIndex = parseInt(persianNumbers[1]) - 1;
+    const day = persianNumbers[2];
+    const afghanMonths = [
+        "حمل", "ثور", "جوزا", "سرطان", "اسد", "سنبله",
+        "میزان", "عقرب", "قوس", "جدی", "دلو", "حوت"
+    ];
+    return `${day} ${afghanMonths[monthIndex]} ${year}`;
+}
+
+// سپس در formatFullDate به این شکل استفاده کن:
+function formatFullDate() {
+    const now = new Date();
+    const gregorian = now.toLocaleDateString('en-GB', { year:'numeric', month:'long', day:'numeric' });
+    const persian = toAfghanPersianDate(now);   // <-- این خط جایگزین خط قبلی می‌شود
+    const hijri = now.toLocaleDateString('ar-SA-u-ca-islamic', { year:'numeric', month:'long', day:'numeric' });
+    return `📅 میلادی: ${gregorian}\n📅 شمسی: ${persian}\n📅 قمری: ${hijri}`;
+}
     const hijri = now.toLocaleDateString('ar-SA-u-ca-islamic', { year:'numeric', month:'long', day:'numeric' });
     return `📅 میلادی: ${gregorian}\n📅 شمسی: ${persian}\n📅 قمری: ${hijri}`;
 }

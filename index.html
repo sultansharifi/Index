@@ -59,7 +59,16 @@ const STORAGE_KEY="fortyDaysChallenge";
 const DEFAULT_TASKS=["ورزش روزانه","مطالعه ۳۰ دقیقه","عدم استفاده از موبایل بعد از ۱۰ شب"];
 let appState={mistakes:0,history:[],tasks:[...DEFAULT_TASKS],currentChecks:{},submittedToday:false,lastSubmissionDate:null,lastReport:""};
 function todayStr(){return new Date().toISOString().slice(0,10);}
-function formatPersianDate(){return new Date().toLocaleDateString('fa-IR',{weekday:'long',year:'numeric',month:'long',day:'numeric'});}
+function formatFullDate() {
+    const now = new Date();
+    // میلادی (Gregorian)
+    const gregorian = now.toLocaleDateString('en-GB', { year:'numeric', month:'long', day:'numeric' });
+    // هجری شمسی (Persian) - همان قبلی
+    const persian = now.toLocaleDateString('fa-IR', { year:'numeric', month:'long', day:'numeric' });
+    // هجری قمری (Islamic Lunar) - با استفاده از locale عربی و تقویم اسلامی
+    const hijri = now.toLocaleDateString('ar-SA-u-ca-islamic', { year:'numeric', month:'long', day:'numeric' });
+    return `📅 میلادی: ${gregorian}\n📅 شمسی: ${persian}\n📅 قمری: ${hijri}`;
+}
 function syncChecks(){let nc={};for(let i=0;i<appState.tasks.length;i++)nc[i]=!!appState.currentChecks[i];appState.currentChecks=nc;}
 function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify({mistakes:appState.mistakes,history:appState.history,tasks:appState.tasks,currentChecks:appState.currentChecks,submittedToday:appState.submittedToday,lastSubmissionDate:appState.lastSubmissionDate,lastReport:appState.lastReport}));}
 function load(){let raw=localStorage.getItem(STORAGE_KEY);if(!raw){appState={mistakes:0,history:[],tasks:[...DEFAULT_TASKS],currentChecks:{},submittedToday:false,lastSubmissionDate:null,lastReport:""};syncChecks();return;}let s=JSON.parse(raw);appState.mistakes=s.mistakes??0;appState.history=s.history??[];appState.tasks=s.tasks?.length?s.tasks:[...DEFAULT_TASKS];appState.currentChecks=s.currentChecks??{};appState.submittedToday=s.submittedToday===true;appState.lastSubmissionDate=s.lastSubmissionDate||null;appState.lastReport=s.lastReport||"";syncChecks();}

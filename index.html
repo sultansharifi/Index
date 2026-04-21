@@ -58,35 +58,28 @@ body{font-family:-apple-system,system-ui;background:var(--bg1);color:var(--t1);d
 const STORAGE_KEY="fortyDaysChallenge";
 const DEFAULT_TASKS=["ورزش روزانه","مطالعه ۳۰ دقیقه","عدم استفاده از موبایل بعد از ۱۰ شب"];
 let appState={mistakes:0,history:[],tasks:[...DEFAULT_TASKS],currentChecks:{},submittedToday:false,lastSubmissionDate:null,lastReport:""};
+
 function todayStr(){return new Date().toISOString().slice(0,10);}
-// تابع جدید برای نمایش سه تاریخ
-function formatFullDate() {
-    const now = new Date();
-    const gregorian = now.toLocaleDateString('en-GB', { year:'numeric', month:'long', day:'numeric' });
-    // تابع تبدیل تاریخ میلادی به شمسی با نام ماه‌های افغانی (دری)
+
+// تابع تبدیل تاریخ میلادی به شمسی با نام ماه‌های افغانی (دری)
 function toAfghanPersianDate(date) {
     const persianNumbers = date.toLocaleDateString('fa-IR-u-nu-latn', { year:'numeric', month:'numeric', day:'numeric' }).split('/');
     const year = persianNumbers[0];
     const monthIndex = parseInt(persianNumbers[1]) - 1;
     const day = persianNumbers[2];
-    const afghanMonths = [
-        "حمل", "ثور", "جوزا", "سرطان", "اسد", "سنبله",
-        "میزان", "عقرب", "قوس", "جدی", "دلو", "حوت"
-    ];
+    const afghanMonths = ["حمل", "ثور", "جوزا", "سرطان", "اسد", "سنبله", "میزان", "عقرب", "قوس", "جدی", "دلو", "حوت"];
     return `${day} ${afghanMonths[monthIndex]} ${year}`;
 }
 
-// سپس در formatFullDate به این شکل استفاده کن:
+// تابع اصلی برای نمایش سه تاریخ
 function formatFullDate() {
     const now = new Date();
     const gregorian = now.toLocaleDateString('en-GB', { year:'numeric', month:'long', day:'numeric' });
-    const persian = toAfghanPersianDate(now);   // <-- این خط جایگزین خط قبلی می‌شود
+    const persian = toAfghanPersianDate(now);
     const hijri = now.toLocaleDateString('ar-SA-u-ca-islamic', { year:'numeric', month:'long', day:'numeric' });
     return `📅 میلادی: ${gregorian}\n📅 شمسی: ${persian}\n📅 قمری: ${hijri}`;
 }
-    const hijri = now.toLocaleDateString('ar-SA-u-ca-islamic', { year:'numeric', month:'long', day:'numeric' });
-    return `📅 میلادی: ${gregorian}\n📅 شمسی: ${persian}\n📅 قمری: ${hijri}`;
-}
+
 function syncChecks(){let nc={};for(let i=0;i<appState.tasks.length;i++)nc[i]=!!appState.currentChecks[i];appState.currentChecks=nc;}
 function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify({mistakes:appState.mistakes,history:appState.history,tasks:appState.tasks,currentChecks:appState.currentChecks,submittedToday:appState.submittedToday,lastSubmissionDate:appState.lastSubmissionDate,lastReport:appState.lastReport}));}
 function load(){let raw=localStorage.getItem(STORAGE_KEY);if(!raw){appState={mistakes:0,history:[],tasks:[...DEFAULT_TASKS],currentChecks:{},submittedToday:false,lastSubmissionDate:null,lastReport:""};syncChecks();return;}let s=JSON.parse(raw);appState.mistakes=s.mistakes??0;appState.history=s.history??[];appState.tasks=s.tasks?.length?s.tasks:[...DEFAULT_TASKS];appState.currentChecks=s.currentChecks??{};appState.submittedToday=s.submittedToday===true;appState.lastSubmissionDate=s.lastSubmissionDate||null;appState.lastReport=s.lastReport||"";syncChecks();}
@@ -99,8 +92,7 @@ function renderToday(){let cont=document.getElementById('tasksList'),btn=documen
 function renderHistory(){let cont=document.getElementById('historyList');if(!appState.history.length){cont.innerHTML='<div class="empty">هنوز روزی ثبت نشده</div>';return;}let html='';for(let i=appState.history.length-1;i>=0;i--){let h=appState.history[i];html+=`<div class="hi"><span>📅 ${escapeHtml(h.date)} — روز ${h.dayNum}</span><span class="${h.failed?'berr':'bok'}">${h.failed?h.failed+' اشتباه':'موفق'}</span></div>`;}cont.innerHTML=html;}
 function renderSettings(){let cont=document.getElementById('settingsTasksList');if(!appState.tasks.length){cont.innerHTML='<div class="empty">لیست خالی است</div>';return;}let html='';for(let i=0;i<appState.tasks.length;i++){html+=`<div class="ti lk"><div class="tn">${escapeHtml(appState.tasks[i])}</div><button class="btn btnr" data-del-index="${i}">🗑️ حذف</button></div>`;}cont.innerHTML=html;document.querySelectorAll('#settingsTasksList .btnr').forEach(btn=>{btn.removeEventListener('click',window.delHandler);window.delHandler=(e)=>{let idx=parseInt(e.currentTarget.getAttribute('data-del-index'));if(!isNaN(idx)&&idx>=0&&idx<appState.tasks.length){appState.tasks.splice(idx,1);syncChecks();save();renderSettings();renderToday();renderHeader();}};btn.addEventListener('click',window.delHandler);});}
 function toggleTask(i){if(appState.submittedToday||isComplete())return;if(i>=0&&i<appState.tasks.length){appState.currentChecks[i]=!appState.currentChecks[i];save();renderToday();}}
-function submitReport(){if(appState.submittedToday){alert('امروز قبلاً ثبت شده');return;}if(isComplete()){alert('چالش کامل شده');return;}if(!appState.tasks.length){alert('وظیفه‌ای وجود ندارد');return;}let done=0;for(let i=0;i<appState.tasks.length;i++)if(appState.currentChecks[i])done++;let failed=appState.tasks.length-done;appState.mistakes+=failed;let dayNum=appState.history.length+1;let date = formatFullDate().replace(/\n/g, '  |  '); // اصلاح شده
-let iso=todayStr();let lines='';for(let i=0;i<appState.tasks.length;i++)lines+=`${appState.currentChecks[i]?'✅':'❌'} ${appState.tasks[i]}\n`;let newTotal=40+appState.mistakes;let report=`📋 گزارش روز ${dayNum}\n📅 تاریخ: ${date}\n━━━━━━━━━━━━━━━━\n${lines.trim()}\n━━━━━━━━━━━━━━━━\n✅ انجام شده: ${done}/${appState.tasks.length}\n❌ اشتباه امروز: ${failed}\n🎯 مجموع اشتباهات: ${appState.mistakes}\n📆 هدف جدید: ${newTotal} روز\n${failed===0?'🏆 روز موفق! آفرین':`⚠️ ${failed} روز به چالش اضافه شد`}`;appState.lastReport=report;appState.submittedToday=true;appState.lastSubmissionDate=iso;appState.history.push({date:date,dayNum:dayNum,failed:failed,done:done,total:appState.tasks.length});save();renderHeader();renderToday();renderHistory();}
+function submitReport(){if(appState.submittedToday){alert('امروز قبلاً ثبت شده');return;}if(isComplete()){alert('چالش کامل شده');return;}if(!appState.tasks.length){alert('وظیفه‌ای وجود ندارد');return;}let done=0;for(let i=0;i<appState.tasks.length;i++)if(appState.currentChecks[i])done++;let failed=appState.tasks.length-done;appState.mistakes+=failed;let dayNum=appState.history.length+1;let date = formatFullDate().replace(/\n/g, '  |  ');let iso=todayStr();let lines='';for(let i=0;i<appState.tasks.length;i++)lines+=`${appState.currentChecks[i]?'✅':'❌'} ${appState.tasks[i]}\n`;let newTotal=40+appState.mistakes;let report=`📋 گزارش روز ${dayNum}\n📅 تاریخ: ${date}\n━━━━━━━━━━━━━━━━\n${lines.trim()}\n━━━━━━━━━━━━━━━━\n✅ انجام شده: ${done}/${appState.tasks.length}\n❌ اشتباه امروز: ${failed}\n🎯 مجموع اشتباهات: ${appState.mistakes}\n📆 هدف جدید: ${newTotal} روز\n${failed===0?'🏆 روز موفق! آفرین':`⚠️ ${failed} روز به چالش اضافه شد`}`;appState.lastReport=report;appState.submittedToday=true;appState.lastSubmissionDate=iso;appState.history.push({date:date,dayNum:dayNum,failed:failed,done:done,total:appState.tasks.length});save();renderHeader();renderToday();renderHistory();}
 function fullReset(){if(confirm('همه داده‌ها پاک می‌شوند. ادامه؟')){appState={mistakes:0,history:[],tasks:[...DEFAULT_TASKS],currentChecks:{},submittedToday:false,lastSubmissionDate:null,lastReport:""};syncChecks();save();renderAll();goToTab('today');}}
 function addTask(){let inp=document.getElementById('newTaskInput'),val=inp.value.trim();if(!val){alert('وظیفه را وارد کن');return;}appState.tasks.push(val);syncChecks();inp.value='';save();renderSettings();renderToday();}
 function goToTab(tab){document.getElementById('todayPanel').style.display=tab==='today'?'block':'none';document.getElementById('historyPanel').style.display=tab==='history'?'block':'none';document.getElementById('settingsPanel').style.display=tab==='settings'?'block':'none';document.querySelectorAll('.tab').forEach(btn=>{if(btn.getAttribute('data-tab')===tab)btn.classList.add('on');else btn.classList.remove('on');});if(tab==='history')renderHistory();if(tab==='settings')renderSettings();if(tab==='today')renderToday();}
